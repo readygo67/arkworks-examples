@@ -13,20 +13,20 @@ use rand_core::{RngCore, OsRng};
 // Multiplier circuit
 // proving that I know a such that a * b = c
 #[derive(Copy, Clone)]
-pub struct Multiplier<F:Field> {
+pub struct MultiplierCircuit<F:Field> {
     pub a: Option<F>,
     pub b: Option<F>,
     pub c: Option<F>
 }
 
-pub struct MultiplierGenerator<F:Field> {
+pub struct MultiplierGeneratorCircuit<F:Field> {
     pub a: Option<F>,
     pub b: Option<F>,
 }
 
 
 
-impl<F: Field> ConstraintSynthesizer<F> for Multiplier<F> {
+impl<F: Field> ConstraintSynthesizer<F> for MultiplierCircuit<F> {
     fn generate_constraints(
         self,
         cs: ConstraintSystemRef<F>,
@@ -41,7 +41,7 @@ impl<F: Field> ConstraintSynthesizer<F> for Multiplier<F> {
     }
 }
 
-impl<F: Field> ConstraintSynthesizer<F> for MultiplierGenerator<F> {
+impl<F: Field> ConstraintSynthesizer<F> for MultiplierGeneratorCircuit<F> {
     fn generate_constraints(
         self,
         cs: ConstraintSystemRef<F>,
@@ -67,7 +67,7 @@ fn main() {
 
     // generate the setup parameters
     let (pk, vk) = Groth16::<Bls12_381>::circuit_specific_setup(
-        Multiplier::<BlsFr> { a: None, b: None, c :None },
+        MultiplierCircuit::<BlsFr> { a: None, b: None, c :None },
         rng,
     )
     .unwrap();
@@ -79,7 +79,7 @@ fn main() {
 
     let proof = Groth16::<Bls12_381>::prove(
         &pk,
-        Multiplier::<BlsFr> {
+        MultiplierCircuit::<BlsFr> {
             a: Some(a),
             b: Some(b),
             c: Some(c),
@@ -98,7 +98,7 @@ fn test_multiplier_success() {
 
     // generate the setup parameters
     let (pk, vk) = Groth16::<Bls12_381>::circuit_specific_setup(
-        Multiplier::<BlsFr> { a: None, b: None, c:None },
+        MultiplierCircuit::<BlsFr> { a: None, b: None, c:None },
         rng,
     )
     .unwrap();
@@ -110,7 +110,7 @@ fn test_multiplier_success() {
 
     let proof = Groth16::<Bls12_381>::prove(
         &pk,
-        Multiplier::<BlsFr> {
+        MultiplierCircuit::<BlsFr> {
             a: Some(a),
             b: Some(b),
             c: Some(c),
@@ -129,7 +129,7 @@ fn test_multiplier_generator_success() {
 
     // generate the setup parameters
     let (pk, vk) = Groth16::<Bls12_381>::circuit_specific_setup(
-        MultiplierGenerator::<BlsFr> { a: None, b: None},
+        MultiplierGeneratorCircuit::<BlsFr> { a: None, b: None},
         rng,
     )
     .unwrap();
@@ -143,7 +143,7 @@ fn test_multiplier_generator_success() {
 
     let proof = Groth16::<Bls12_381>::prove(
         &pk,
-        MultiplierGenerator::<BlsFr> {
+        MultiplierGeneratorCircuit::<BlsFr> {
             a: Some(a),
             b: Some(b),
         },
