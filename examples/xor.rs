@@ -10,9 +10,10 @@ use ark_snark::SNARK;
 use rand_core::{OsRng};
 
 
-pub struct BitXORGeneratorCircuit<Scalar:PrimeField> {
-    pub a: Option<Scalar>,
-    pub b: Option<Scalar>,
+pub struct BitXORGeneratorCircuit<F:Field> {
+    pub a: Option<F>,
+    pub b: Option<F>,
+    pub c: Option<F>,
 }
 
 impl<F: Field> ConstraintSynthesizer<F> for BitXORGeneratorCircuit<F> {
@@ -22,37 +23,38 @@ impl<F: Field> ConstraintSynthesizer<F> for BitXORGeneratorCircuit<F> {
     ) -> Result<(), SynthesisError> {
         let a = cs.new_witness_variable(|| self.a.ok_or(SynthesisError::AssignmentMissing))?;
         let b = cs.new_witness_variable(|| self.b.ok_or(SynthesisError::AssignmentMissing))?;
-        
+        let c = cs.new_input_variable(|| self.c.ok_or(SynthesisError::AssignmentMissing))?;
+
+        let one = ConstraintSystem::<F>::one();
+        // let zero = ConstraintSystem::<F>::zero();
 
         // check (1-a) * a = 0
         cs.enforce_constraint(
-            lc!() + F::one() - a,
+            lc!() + one - a,
             lc!() + a,
             lc!(),
-        );
+        )?;
 
         // check (1-b) * b = 0
         cs.enforce_constraint(
-            lc!() + F::one() - b,
+            lc!() + one - b,
             lc!() + b,
             lc!(),
-        );
+        )?;
 
         //calculate a xor b 
-        let c = cs.new_input_variable(|| {
-            if a == b {
-                Ok(F::zero())
-            } else {
-                Ok(F::one())
-            }
-        })?;
+        cs.enforce_constraint(
+            lc!() + one - c,
+            lc!() + c,
+            lc!(),
+        )?;
 
         // check (1-b) * b = 0
         cs.enforce_constraint(
             lc!() + a + a,
             lc!() + b,
             lc!() + a + b -c,
-        );
+        )?;
         
         Ok(())
     }
@@ -69,24 +71,24 @@ fn test_bitxor_generator_success(){
 
     // generate the setup parameters
     let (pk, vk) = Groth16::<Bls12_381>::circuit_specific_setup(
-        BitXORGeneratorCircuit::<BlsFr> { a: None, b: None},
+        BitXORGeneratorCircuit::<BlsFr> { a: None, b: None, c:None},
         rng,
     ).unwrap();
 
     
-    let a = F::Zero();
-    let b = F::Zero();
+    let a = BlsFr::from(1); 
+    let b = BlsFr::from(1); 
+    let c = BlsFr::from(0); 
 
     let proof = Groth16::<Bls12_381>::prove(
         &pk,
-        MultiplierGenerator::<BlsFr> {
+        BitXORGeneratorCircuit::<BlsFr> {
             a: Some(a),
             b: Some(b),
+            c: Some(c),
         },
         rng,
     ).unwrap();
-
-    let c = F::Zero();
 
     assert!(Groth16::<Bls12_381>::verify(&vk, &[c], &proof).unwrap());
 }
